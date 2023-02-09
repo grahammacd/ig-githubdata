@@ -1,8 +1,8 @@
 const axios = require("axios");
 const BASE_URL = `https://api.github.com`;
 const authentication = {
-  username: "grahammacd",
-  password: "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",
+  username: "XXXX",
+  password: "XXXX",
 };
 
 module.exports = {
