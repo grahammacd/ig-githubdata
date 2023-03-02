@@ -1,121 +1,176 @@
-const PullRequestAPI = require("./pull-requests");
-const dayFunctions = require("./days");
+const { Console } = require("console");
+const { setDefaultResultOrder } = require("dns");
+const GraphQL = require("./graphql");
+const PR = require("./pr");
 
-const getRepo = function (repository) {
-  const split = repository.split("/");
-  return split[split.length - 1];
-};
+function formatDate(date) {
+  const d = new Date(date);
+  let month = "" + (d.getMonth() + 1),
+    day = "" + d.getDate();
+  const year = d.getFullYear();
 
-const mapToOutput = async function (item) {
-  const repository = getRepo(item.repository_url);
-  const pr = await PullRequestAPI.getPR(
-    getRepo(item.repository_url),
-    item.number
-  );
+  if (month.length < 2) month = "0" + month;
+  if (day.length < 2) day = "0" + day;
 
-  const commits = await PullRequestAPI.getCommits(
-    getRepo(item.repository_url),
-    item.number
-  );
+  return [year, month, day].join("-");
+}
 
-  const reviews = await PullRequestAPI.getReviews(
-    getRepo(item.repository_url),
-    item.number
-  );
-
-  const comments = await PullRequestAPI.getComments(
-    getRepo(item.repository_url),
-    item.number
-  );
-
-  const myItemObject = {
-    Link: item.url,
-    Repository: repository,
-    Title: item.title,
-    CreatedAt: new Date(item.created_at),
-    UpdatedAt: new Date(item.updated_at),
-    CreatedDays: dayFunctions.countDays(item.created_at),
-    UpdatedDays: dayFunctions.countDays(item.updated_at),
-    User: item.user.login,
-    MergeableState: pr.data.mergeable_state,
-    Reviewers: pr.data.requested_reviewers
-      .map((item) => {
-        return item.login;
-      })
-      .join("|"),
-    Additions: pr.data.additions,
-    Deletions: pr.data.deletions,
-    ChangedFiles: pr.data.changed_files,
-    Commits: commits.data.length,
-    Reviews: reviews.data.length,
-    Comments: comments.data.length
+function getRepositoryName(item) {
+  return {
+    repository: item.node.name,
+    lastPullRequest: item.node.pullRequests.edges[0].node.number,
+    pullRequests: [],
   };
-  return myItemObject;
-};
+}
 
-const createResultsLine = function (result) {
-  let output = '"' + result.Link + '",';
-  output += '"' + result.Repository + '",';
-  output += '"' + result.Title + '",';
-  output += result.CreatedAt + ",";
-  output += result.UpdatedAt + ",";
-  output += result.CreatedDays + ",";
-  output += result.UpdatedDays + ",";
-  output += '"' + result.User + '",';
-  output += '"' + result.MergeableState + '",';
-  output += '"' + result.Reviewers + '",';
-  output += result.Additions + ",";
-  output += result.Deletions + ",";
-  output += result.ChangedFiles + ",";
-  output += result.Commits + ",";
-  output += result.Reviews + ",";
-  output += result.Comments;
+function hasPR(item) {
+  return (
+    item.node.pullRequests.edges.length > 0
+  );
+}
 
-  return output;
-};
-
-const getResultsCsv = function (results) {
-  const header =
-    "Link,Repository,Title,Created_At,Updated_At,Created_Days,Updated_Days,Raised_By,Mergeable_State,Requested_Reviewers,Additions,Deletions,Changed_Files,Commits,Reviews,Comments\n";
-  const formatted = results.map(createResultsLine);
-
-  let prList = "";
-  formatted.forEach((item) => {
-    prList += item + "\n";
-  });
-
-  return header + prList;
-};
-
-const addLeadingZeros = function (n) {
-  if (n <= 9) {
-    return "0" + n;
+function populatePullRequests(currentValue, index, arr) {
+  currentValue.pullRequests = [];
+  for (let i = 1; i <= currentValue.lastPullRequest; i++) {
+    currentValue.pullRequests.push(i);
   }
-  return n;
-};
+}
 
-const asyncApiCall = async () => {
-  const response = await PullRequestAPI.searchPullRequests();
-  const results = await Promise.all(response.data.items.filter((item) => item.user.login !== 'dependabot[bot]').map(mapToOutput));
+function makeDirectory(path) {
+  const fs = require("fs");
 
-  const timeElapsed = Date.now();
-  const today = new Date(timeElapsed);
-  const todayString =
-    today.getFullYear() +
-    "-" +
-    addLeadingZeros(today.getMonth() + 1) +
-    "-" +
-    addLeadingZeros(today.getDate());
+  fs.access(path, (error) => {
+    // To check if the given directory
+    // already exists or not
+    if (error) {
+      // If current directory does not exist
+      // then create it
+      fs.mkdir(path, (error) => {
+        if (error) {
+          console.log(error);
+        }
+      });
+    }
+  });
+}
+
+async function getFromCache(owner, repo, prNumber) {
+  const folderNameClosed = "prfiles/closed";
+  const folderNameDate = "prfiles/" + formatDate(new Date());
+
+  makeDirectory("prfiles");
+  makeDirectory(folderNameClosed);
+  makeDirectory(folderNameDate);
+  const fileName = repo + "-" + prNumber + ".json";
+
+  let currentFileName = folderNameClosed + "/" + fileName;
 
   let fs = require("fs");
-  fs.writeFile(
-    "prlist-" + todayString + ".csv",
-    getResultsCsv(results),
-    function (err) {
-      if (err) return console.log(err);
-      console.log("PR Results > prlist-" + todayString + ".csv");
+
+  let needsData = true;
+  let data;
+
+  await new Promise((resolve, reject) => {
+    fs.open(currentFileName, function (err, f) {
+      if (err) {
+        reject("file does not exist");
+      } else {
+        resolve("file exists");
+        fs.close(f);
+      }
+    });
+  })
+    .then(() => {
+      needsData = false;
+    })
+    .catch(() => {});
+
+  if (needsData) {
+    currentFileName = folderNameDate + "/" + fileName;
+  }
+
+  await new Promise((resolve, reject) => {
+    fs.open(currentFileName, function (err, f) {
+      if (err) {
+        reject("file does not exist");
+      } else {
+        resolve("file exists");
+        fs.close(f);
+      }
+    });
+  })
+    .then(() => {
+      needsData = false;
+    })
+    .catch(() => {});
+
+  if (needsData) {
+    data = await GraphQL.qraphQlPullRequest(owner, repo, prNumber);
+    data = data.data;
+    if (data.data.repository.pullRequest) {
+      const pr = PR.getPr(data);
+      if (pr.closed) {
+        currentFileName = folderNameClosed + "/" + fileName;
+      }
+      fs.writeFileSync(currentFileName, JSON.stringify(pr));
+    } else {
+      data = null;
     }
-  );
+  } else {
+    const dataString = fs.readFileSync(currentFileName);
+    data = JSON.parse(dataString);
+  }
+
+  return data;
+}
+
+async function GetAllPullRequests(repos) {
+  let prs = [];
+
+  for (let r of repos) {
+    console.log("Loading repository: " + r.repository);
+    for (let p = 1; p <= r.pullRequests.length; p++) {
+      const pr = await getFromCache("incentivegames", r.repository, p);
+      if (pr) {
+        prs.push(pr);
+      }
+    }
+  }
+
+  return prs;
+}
+
+function isOpen(item, start, end){
+  if(PR.isOpenRange(item, start, end)){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+const GenerateGithubData = async () => {
+  // 1: Get al repos
+  // 2: for each repo get a list of PR ids
+  // 3: get each PR
+
+  const response = await GraphQL.qraphQlRepositories("incentivegames");
+  const repos = response.data.data.organization.repositories.edges
+    .filter(hasPR)
+    .map(getRepositoryName);
+  repos.forEach(populatePullRequests);
+  const pullRequests = await GetAllPullRequests(repos);
+
+  let start = new Date(2022,4,29);
+  let end = new Date(start);
+  end.setDate(end.getDate() + 7);
+
+  while(end < new Date()){
+    const openPrs = pullRequests.filter((item) => { return isOpen(item,start,end); });
+    console.log(start + " to " + end + " (" + openPrs.length + ")");
+    start.setDate(start.getDate() + 7);
+    end.setDate(end.getDate() + 7);
+  }
 };
 
-asyncApiCall();
+GenerateGithubData();
