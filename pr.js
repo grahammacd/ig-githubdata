@@ -1,5 +1,5 @@
 function getPrChurn(pr) {
-  var result = [];
+  let result = [];
   pr.commits.edges.forEach((element) =>
     result.push({ Type: "C", Date: new Date(element.node.commit.authoredDate) })
   );
@@ -10,8 +10,8 @@ function getPrChurn(pr) {
     return a.Date - b.Date;
   });
 
-  var iteration = 0;
-  var onCommit = true;
+  let iteration = 0;
+  let onCommit = true;
 
   for (posn = 0; posn < result.length; posn++) {
     if (result[posn].Type === "R" && onCommit) {

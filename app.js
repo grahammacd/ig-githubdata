@@ -24,9 +24,7 @@ function getRepositoryName(item) {
 }
 
 function hasPR(item) {
-  return (
-    item.node.pullRequests.edges.length > 0
-  );
+  return item.node.pullRequests.edges.length > 0;
 }
 
 function populatePullRequests(currentValue, index, arr) {
@@ -140,14 +138,41 @@ async function GetAllPullRequests(repos) {
   return prs;
 }
 
-function isOpen(item, start, end){
-  if(PR.isOpenRange(item, start, end)){
-    return true;
-  }
-  else{
-    return false;
-  }
+function isOpen(item, start, end) {
+  return PR.isOpenRange(item, start, end);
 }
+
+const addLeadingZeros = function (n) {
+  if (n <= 9) {
+    return "0" + n;
+  }
+  return n;
+};
+
+const createResultsLine = function (result) {
+  let output = result.Start + ",";
+  output += result.End + ",";
+  output += result.Total + ",";
+  output += result.Opened + ",";
+  output += result.Closed + ",";
+  output += result.Churn;
+  return output;
+};
+
+
+function getResultsCsv(results){
+  const header =
+    "StartDate,EndDate,TotalOpen,Opened,Closed,AvgChurn\n";
+  const formatted = results.map(createResultsLine);
+
+  let prList = "";
+  formatted.forEach((item) => {
+    prList += item + "\n";
+  });
+
+  return header + prList;
+}
+
 
 const GenerateGithubData = async () => {
   // 1: Get al repos
@@ -161,16 +186,77 @@ const GenerateGithubData = async () => {
   repos.forEach(populatePullRequests);
   const pullRequests = await GetAllPullRequests(repos);
 
-  let start = new Date(2022,4,29);
+  let start = new Date(2020, 11, 27);
   let end = new Date(start);
   end.setDate(end.getDate() + 7);
 
-  while(end < new Date()){
-    const openPrs = pullRequests.filter((item) => { return isOpen(item,start,end); });
-    console.log(start + " to " + end + " (" + openPrs.length + ")");
+  let allPrs = [];
+
+  while (end < new Date()) {
+    const openPrs = pullRequests.filter((item) => {
+      return isOpen(item, start, end);
+    });
+
+    const initialValue = 0;
+    const totalChurn = openPrs.reduce(
+      (accumulator, currentValue) =>
+        accumulator + currentValue.churn.ChurnNumber,
+      initialValue
+    );
+    const totalOpened = openPrs.filter((item) => {
+      return new Date(item.createdAtDate) > start;
+    }).length;
+    const totalClosed = openPrs.filter((item) => {
+      return item.closed && new Date(item.closedAtDate) < end;
+    }).length;
+    const averageChurn = totalChurn / openPrs.length;
+    
+    const startDateString = start.getFullYear() +    "-" +    addLeadingZeros(start.getMonth() + 1) +    "-" +    addLeadingZeros(start.getDate());
+    const endDateString = end.getFullYear() +    "-" +    addLeadingZeros(end.getMonth() + 1) +    "-" +    addLeadingZeros(end.getDate());
+
+    allPrs.push({"Start":startDateString, "End":endDateString, "Total":openPrs.length, "Opened":totalOpened, "Closed":totalClosed, "Churn":averageChurn});
+
+    console.log(
+      start +
+        " to " +
+        end +
+        " (" +
+        openPrs.length +
+        " " +
+        averageChurn +
+        " " +
+        totalOpened +
+        " " +
+        totalClosed +
+        ")"
+    );
     start.setDate(start.getDate() + 7);
     end.setDate(end.getDate() + 7);
   }
+
+console.log(JSON.stringify(allPrs));
+
+const timeElapsed = Date.now();
+const today = new Date(timeElapsed);
+const todayString =
+  today.getFullYear() +
+  "-" +
+  addLeadingZeros(today.getMonth() + 1) +
+  "-" +
+  addLeadingZeros(today.getDate());
+
+let fs = require("fs");
+fs.writeFile(
+  "prdata-" + todayString + ".csv",
+  getResultsCsv(allPrs),
+  function (err) {
+    if (err) return console.log(err);
+    console.log("PR Results > prlist-" + todayString + ".csv");
+  }
+);
+
+
+
 };
 
 GenerateGithubData();
