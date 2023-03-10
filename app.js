@@ -209,8 +209,6 @@ const GenerateGithubData = async () => {
       return item.reviews.edges.length > 0;
     })
 
-    //console.log(mergedPrsInRange.length);
-
     const initialValue = 0;
     const totalChurn = openPrs.reduce(
       (accumulator, currentValue) =>
@@ -249,8 +247,6 @@ const GenerateGithubData = async () => {
     if(mergedPrsInRange.length > 0){
       averageDaysMerged = totalLengthMerged / mergedPrsInRange.length;
     }
-    console.log(averageDaysMerged);
-
 
     const averageFilesChanged = openPrs.reduce(
       (accumulator, currentValue) =>
