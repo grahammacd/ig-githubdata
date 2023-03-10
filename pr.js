@@ -58,8 +58,34 @@ function isOpen(pr, startDate, endDate) {
   return result;
 }
 
+function ageInDaysWhenMerged(pr){
+  const oneDay = 24 * 60 * 60 * 1000;
+  if(pr.merged){
+    const openedDate = new Date(pr.createdAtDate);
+    const mergedDate = new Date(pr.mergedAtDate);
+    return Math.round(Math.abs((mergedDate - openedDate) / oneDay));
+  }
+  else{
+    return 0;
+  }
+}
+
+function ageInHoursWhenReviewed(pr){
+  const oneHour = 60 * 60 * 1000;
+  if(pr.reviews.edges.length > 0){
+    const openedDate = new Date(pr.createdAtDate);
+    const firstReviewDate = new Date(pr.reviews.edges[0].node.createdAt);
+    return Math.round(Math.abs((firstReviewDate - openedDate) / oneHour));
+  }
+  else{
+    return 0;
+  }
+}
+
 module.exports = {
   getPr: (pr) => getPr(pr),
   isOpenRange: (pr, startDate, endDate) => isOpen(pr, startDate, endDate),
   isOpen: (pr, date) => isOpen(pr, date, date),
+  ageInDaysWhenMerged: (pr) => ageInDaysWhenMerged(pr),
+  ageInHoursWhenReviewed: (pr) => ageInHoursWhenReviewed(pr)
 };

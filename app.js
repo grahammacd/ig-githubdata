@@ -155,14 +155,18 @@ const createResultsLine = function (result) {
   output += result.Total + ",";
   output += result.Opened + ",";
   output += result.Closed + ",";
-  output += result.Churn;
+  output += result.Churn + ",";
+  output += result.AvgComments + ",";
+  output += result.AvgDaysMerged + ",";
+  output += result.AvgAgeWhenReviewed + ",";
+  output += result.AvgFilesChanged;
   return output;
 };
 
 
 function getResultsCsv(results){
   const header =
-    "StartDate,EndDate,TotalOpen,Opened,Closed,AvgChurn\n";
+    "StartDate,EndDate,TotalOpen,Opened,Closed,AvgChurn,AvgComments,AvgDaysMerged,AvgAgeWhenReviewed,AvgFilesChanged\n";
   const formatted = results.map(createResultsLine);
 
   let prList = "";
@@ -192,10 +196,20 @@ const GenerateGithubData = async () => {
 
   let allPrs = [];
 
-  while (end < new Date()) {
+  while (start < new Date()) {
     const openPrs = pullRequests.filter((item) => {
       return isOpen(item, start, end);
     });
+
+    const mergedPrsInRange = pullRequests.filter((item) => {
+      return item.merged && new Date(item.mergedAt) > start && new Date(item.mergedAt) < end
+    });
+
+    const reviewedPrs = openPrs.filter((item) => {
+      return item.reviews.edges.length > 0;
+    })
+
+    //console.log(mergedPrsInRange.length);
 
     const initialValue = 0;
     const totalChurn = openPrs.reduce(
@@ -210,31 +224,48 @@ const GenerateGithubData = async () => {
       return item.closed && new Date(item.closedAtDate) < end;
     }).length;
     const averageChurn = totalChurn / openPrs.length;
-    
+
+    const totalLengthMerged = mergedPrsInRange.reduce(
+      (accumulator, currentValue) =>
+        accumulator + PR.ageInDaysWhenMerged(currentValue),
+      initialValue
+    );
+
+    const averageAgeWhenReviewed = reviewedPrs.reduce(
+      (accumulator, currentValue) =>
+        accumulator + PR.ageInHoursWhenReviewed(currentValue),
+      initialValue
+    ) / reviewedPrs.length;
+
+
+    const averageComments = openPrs.reduce(
+      (accumulator, currentValue) =>
+        accumulator + currentValue.comments.edges.length + currentValue.reviews.edges.length,
+      initialValue
+    ) / openPrs.length;
+
+
+    let averageDaysMerged = 0;
+    if(mergedPrsInRange.length > 0){
+      averageDaysMerged = totalLengthMerged / mergedPrsInRange.length;
+    }
+    console.log(averageDaysMerged);
+
+
+    const averageFilesChanged = openPrs.reduce(
+      (accumulator, currentValue) =>
+        accumulator + currentValue.changedFiles,
+      initialValue
+    ) / openPrs.length;
+
     const startDateString = start.getFullYear() +    "-" +    addLeadingZeros(start.getMonth() + 1) +    "-" +    addLeadingZeros(start.getDate());
     const endDateString = end.getFullYear() +    "-" +    addLeadingZeros(end.getMonth() + 1) +    "-" +    addLeadingZeros(end.getDate());
 
-    allPrs.push({"Start":startDateString, "End":endDateString, "Total":openPrs.length, "Opened":totalOpened, "Closed":totalClosed, "Churn":averageChurn});
+    allPrs.push({"Start":startDateString, "End":endDateString, "Total":openPrs.length, "Opened":totalOpened, "Closed":totalClosed, "Churn":averageChurn, "AvgComments":averageComments, "AvgDaysMerged":averageDaysMerged, "AvgAgeWhenReviewed":averageAgeWhenReviewed,"AvgFilesChanged":averageFilesChanged});
 
-    console.log(
-      start +
-        " to " +
-        end +
-        " (" +
-        openPrs.length +
-        " " +
-        averageChurn +
-        " " +
-        totalOpened +
-        " " +
-        totalClosed +
-        ")"
-    );
     start.setDate(start.getDate() + 7);
     end.setDate(end.getDate() + 7);
   }
-
-console.log(JSON.stringify(allPrs));
 
 const timeElapsed = Date.now();
 const today = new Date(timeElapsed);
