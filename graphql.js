@@ -5,7 +5,7 @@ const authentication = {
   password: "INSERT",
 };
 
-const graphql_query_pr = 'query($owner:String!,$repo:String!,$prNumber:Int!){repository(owner:$owner,name:$repo){name pullRequest(number:$prNumber){number additions deletions changedFiles createdAt merged mergedAt closed closedAt author{login}timelineItems{totalCount}commits(first:100){edges{node{commit{authoredDate}}}}reviews(first:100){edges{node{createdAt commit{authoredDate}}}}comments(first:100){edges{node{author{login}}}}}}}';
+const graphql_query_pr = 'query($owner:String!,$repo:String!,$prNumber:Int!){repository(owner:$owner,name:$repo){name pullRequest(number:$prNumber){title repository{name}number additions deletions changedFiles createdAt merged mergedAt closed closedAt author{login}timelineItems{totalCount}commits(first:100){edges{node{commit{authoredDate}}}}reviews(first:100){edges{node{createdAt commit{authoredDate}}}}comments(first:100){edges{node{author{login}}}}}}}';
 const graphql_query_repos = 'query($login:String!){organization(login:$login){repositories(first:100){edges{node{name pullRequests(last:1){edges{node{number}}}}}}}}'
 
 async function CallGraphQl(query, variables){
