@@ -182,7 +182,7 @@ const GenerateGithubData = async () => {
   repos.forEach(populatePullRequests);
   const pullRequests = await GetAllPullRequests(repos);
 
-  let start = new Date(2020, 11, 27);
+  let start = new Date(2022, 10, 6);
   let end = new Date(start);
   end.setDate(end.getDate() + 7);
 
