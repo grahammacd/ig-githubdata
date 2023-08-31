@@ -175,16 +175,28 @@ function getResultsCsv(results) {
 }
 
 const GenerateGithubData = async () => {
+
+  const username='grahammacd';
+
   const response = await GraphQL.qraphQlRepositories("incentivegames");
   const repos = response.data.data.organization.repositories.edges
     .filter(hasPR)
     .map(getRepositoryName);
   repos.forEach(populatePullRequests);
-  const pullRequests = await GetAllPullRequests(repos);
+  let pullRequests = await GetAllPullRequests(repos);
 
-  let start = new Date(2022, 10, 6);
+  pullRequests = pullRequests.filter((item) => {
+    try{
+      return item.author.login === username;
+    }
+    catch{
+      return false;
+    }
+  });
+
+  let start = new Date(2023, 0, 1);
   let end = new Date(start);
-  end.setDate(end.getDate() + 7);
+  end.setDate(end.getDate() + 1);
 
   let allPrs = [];
 
@@ -271,15 +283,15 @@ const GenerateGithubData = async () => {
       Total: openPrs.length,
       Opened: totalOpened,
       Closed: totalClosed,
-      Churn: averageChurn,
-      AvgComments: averageComments,
-      AvgDaysMerged: averageDaysMerged,
-      AvgAgeWhenReviewed: averageAgeWhenReviewed,
-      AvgFilesChanged: averageFilesChanged,
+      Churn: averageChurn === averageChurn ? averageChurn : 0,
+      AvgComments: averageComments === averageComments ? averageComments : 0,
+      AvgDaysMerged: averageDaysMerged === averageDaysMerged ? averageDaysMerged : 0,
+      AvgAgeWhenReviewed: averageAgeWhenReviewed === averageAgeWhenReviewed ? averageAgeWhenReviewed : 0,
+      AvgFilesChanged: averageFilesChanged === averageFilesChanged ? averageFilesChanged : 0,
     });
 
-    start.setDate(start.getDate() + 7);
-    end.setDate(end.getDate() + 7);
+    start.setDate(start.getDate() + 1);
+    end.setDate(end.getDate() + 1);
   }
 
   const timeElapsed = Date.now();
@@ -293,11 +305,11 @@ const GenerateGithubData = async () => {
 
   let fs = require("fs");
   fs.writeFile(
-    "prdata-" + todayString + ".csv",
+    "prdata-" + todayString + "-" + username + ".csv",
     getResultsCsv(allPrs),
     function (err) {
       if (err) return console.log(err);
-      console.log("PR Results > prdata-" + todayString + ".csv");
+      console.log("PR Results > prdata-" + todayString + "-" + username + ".csv");
     }
   );
 
