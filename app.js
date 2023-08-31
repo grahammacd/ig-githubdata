@@ -182,7 +182,7 @@ const GenerateGithubData = async () => {
   repos.forEach(populatePullRequests);
   const pullRequests = await GetAllPullRequests(repos);
 
-  let start = new Date(2022, 10, 6);
+  let start = new Date(2022, 0, 30);
   let end = new Date(start);
   end.setDate(end.getDate() + 7);
 
@@ -307,6 +307,27 @@ const GenerateGithubData = async () => {
   end.setDate(end.getDate() + 7);
   //exportDateRange(start, end, pullRequests, todayString);
 };
+
+function getAverage(nums){
+  const total = nums.reduce(
+    (accumulator, currentValue) =>
+      accumulator + currentValue,
+    initialValue
+  );
+  return total / nums.length;
+}
+
+function getMedian(nums) {
+  const middle = (nums.length + 1) / 2;
+
+  // Avoid mutating when sorting
+  const sorted = [...nums].sort((a, b) => a - b);
+  const isEven = sorted.length % 2 === 0;
+
+  return isEven ? (sorted[middle - 1.5]
+      + sorted[middle - 0.5]) / 2 :
+      sorted[middle - 1];
+}
 
 function exportDateRange(start, end, pullRequests, todayString)
 {
