@@ -26,7 +26,7 @@ function getPrChurn(pr) {
 }
 
 function getPr(pr) {
-  myPr = pr.data.repository.pullRequest;
+  let myPr = pr.data.repository.pullRequest;
   myPr.createdAtDate = new Date(myPr.createdAt);
 
   if (myPr.merged) {
