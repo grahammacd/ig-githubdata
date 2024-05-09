@@ -1,5 +1,6 @@
 module.exports = {
   getAverage: (nums) => {
+    const initialValue = 0;
     const total = nums.reduce(
       (accumulator, currentValue) => accumulator + currentValue,
       initialValue

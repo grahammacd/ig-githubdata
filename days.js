@@ -26,4 +26,9 @@ module.exports = {
   
     return [year, month, day].join("-");
   },
+  incrementDate: (date, years, months, days) => {
+    date.setDate(date.getDate() + days);
+    date.setMonth(date.getMonth() + months);
+    date.setFullYear(date.getFullYear() + years);
+  },
 };
