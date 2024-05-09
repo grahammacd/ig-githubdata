@@ -7,10 +7,10 @@ const Results = require("./results");
 const GetPRs = require("./getPRs");
 
 const organisation = "incentivegames";
-const startDate = new Date(2022, 0, 1);
+const startDate = new Date(2022, 8, 4);
 const incrementYears = 0;
-const incrementMonths = 1;
-const incrementDays = 0;
+const incrementMonths = 0;
+const incrementDays = 7;
 
 const GenerateGithubData = async () => {
   const response = await GraphQL.qraphQlRepositories(organisation);
@@ -68,7 +68,7 @@ const GenerateGithubData = async () => {
       openPrs.map((pr) => pr.comments.edges.length + pr.reviews.edges.length)
     );
 
-    const averageFilesChanged = Maths.getMean(
+    const averageFilesChanged = Maths.getAverage(
       openPrs.map((pr) => pr.changedFiles)
     );
 
@@ -76,13 +76,13 @@ const GenerateGithubData = async () => {
       Start: Days.formatDate(start),
       End: Days.formatDate(end),
       Total: openPrs.length,
-      Opened: totalOpened,
-      Closed: totalClosed,
-      Churn: averageChurn,
-      AvgComments: averageComments,
-      AvgDaysMerged: averageDaysMerged,
-      AvgAgeWhenReviewed: averageAgeWhenReviewed,
-      AvgFilesChanged: averageFilesChanged,
+      Opened: Maths.ifNaN(totalOpened, 0),
+      Closed: Maths.ifNaN(totalClosed, 0),
+      Churn: Maths.ifNaN(averageChurn, 0),
+      AvgComments: Maths.ifNaN(averageComments, 0),
+      AvgDaysMerged: Maths.ifNaN(averageDaysMerged, 0),
+      AvgAgeWhenReviewed: Maths.ifNaN(averageAgeWhenReviewed, 0),
+      AvgFilesChanged: Maths.ifNaN(averageFilesChanged, 0),
     });
 
     Days.incrementDate(start, incrementYears, incrementMonths, incrementDays);

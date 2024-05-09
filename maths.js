@@ -18,4 +18,7 @@ module.exports = {
       ? (sorted[middle - 1.5] + sorted[middle - 0.5]) / 2
       : sorted[middle - 1];
   },
+  ifNaN: (num, defaultNum) => {
+    return isNaN(num) ? defaultNum : num;
+  },
 };
