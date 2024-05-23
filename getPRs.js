@@ -80,6 +80,7 @@ module.exports = {
             currentFileName = folderNameClosed + "/" + fileName;
           }
           fs.writeFileSync(currentFileName, JSON.stringify(pr));
+          data = pr;
         } else {
           data = null;
         }
@@ -104,5 +105,12 @@ module.exports = {
     }
 
     return prs;
+  },
+  getAllUsers: (prs) => {
+    const onlyUnique = function (value, index, array) {
+      return array.indexOf(value) === index;
+    };
+
+    return prs.filter(pr => pr.author !== null).map((pr) => pr.author.login).filter(onlyUnique);
   },
 };
