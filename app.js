@@ -7,7 +7,7 @@ const Results = require("./results");
 const GetPRs = require("./getPRs");
 
 const organisation = "incentivegames";
-const startDate = new Date(2022, 8, 4);
+const startDate = new Date(2021, 7, 1);
 const incrementYears = 0;
 const incrementMonths = 0;
 const incrementDays = 7;
@@ -19,7 +19,18 @@ const GenerateGithubData = async () => {
     .map(Repository.getRepositoryName);
   repos.forEach(Repository.populatePullRequests);
 
-  const pullRequests = await GetPRs.getAllPullRequests(repos);
+  // const username = "grahammacd";
+  let pullRequests = await GetPRs.getAllPullRequests(repos);
+
+  console.log(GetPRs.getAllUsers(pullRequests));
+
+  // pullRequests = pullRequests.filter((item) => {
+  //   try {
+  //     return item.author.login === username;
+  //   } catch {
+  //     return false;
+  //   }
+  // });
 
   let start = startDate;
   let end = new Date(start);
