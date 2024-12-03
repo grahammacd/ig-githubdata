@@ -8,7 +8,7 @@ const startDate = new Date(2021, 7, 1);
 const incrementYears = 0;
 const incrementMonths = 0;
 const incrementDays = 7;
-const users = ['Aramosgr', 'blair-mongan', 'Marki10', 'DavidGGibson', 'SRN-Dev', 'kb-ig', 'panosfil5', 'L3n1ad', 'MatthewGibson012', 'johnscotland', 'tompenn-ig', 'david-mcb-inc', 'JamesGardener', 'IGCraig', 'RokasAl', 'igor570', 'alasdairw-incentive', 'brandon-incentivegames', 'jiagraham', 'diegoatig', 'corrie-mcgregor', 'felymaitland', 'irene-antreou', 'jack-surman', 'cameron-mcbride-ig', 'alexnewhouse-ig', 'RyanIncentiveGames', 'christophercaleb'];
+const users = ['Aramosgr', 'blair-mongan', 'Marki10', 'DavidGGibson', 'SRN-Dev', 'kb-ig', 'panosfil5', 'L3n1ad', 'MatthewGibson012', 'tompenn-ig', 'david-mcb-inc', 'JamesGardener', 'IGCraig', 'RokasAl', 'igor570', 'alasdairw-incentive', 'brandon-incentivegames', 'jiagraham', 'diegoatig', 'corrie-mcgregor', 'irene-antreou', 'jack-surman', 'cameron-mcbride-ig', 'alexnewhouse-ig', 'RyanIncentiveGames', 'christophercaleb', 'abigailrivera-ig', 'dalebaker-allan', 'mgurel-ig'];
 
 const GenerateGithubData = async () => {
   const response = await GraphQL.qraphQlRepositories(organisation);
@@ -19,7 +19,7 @@ const GenerateGithubData = async () => {
 
   const pullRequests = await GetPRs.getAllPullRequests(repos);
 
-  // users.forEach((u) => DataGenerator.generateUserData(pullRequests,u,DataGenerator.generateData,new Date(startDate),incrementYears,incrementMonths,incrementDays));
+  users.forEach((u) => DataGenerator.generateUserData(pullRequests,u,DataGenerator.generateData,new Date(startDate),incrementYears,incrementMonths,incrementDays));
   DataGenerator.generateData(pullRequests,"allUsers",new Date(startDate),incrementYears,incrementMonths,incrementDays)
 }
 
